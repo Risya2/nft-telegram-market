@@ -1,64 +1,133 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>WebApp NFT</title>
+  <title>NFT Telegram Market</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body {
+      margin: 0;
+      background-color: #111;
+      color: white;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    h1, h2 {
+      text-align: center;
+      color: #0af;
+    }
+    .gift {
+      background-color: #222;
+      padding: 1rem;
+      margin: 1rem;
+      border-radius: 10px;
+      text-align: center;
+      border: 1px solid #0af;
+    }
+    .gift img {
+      width: 64px;
+      height: 64px;
+    }
+    .btn {
+      background-color: #007bff;
+      border: none;
+      color: white;
+      padding: 0.5rem 1rem;
+      text-align: center;
+      display: inline-block;
+      font-size: 14px;
+      margin-top: 0.5rem;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    #admin-panel {
+      background: #222;
+      padding: 1rem;
+      margin: 1rem;
+      border-radius: 10px;
+      border: 1px solid #f39c12;
+    }
+    input, label {
+      display: block;
+      width: 100%;
+      margin-top: 0.5rem;
+      background: #333;
+      color: white;
+      padding: 0.5rem;
+      border: 1px solid #444;
+      border-radius: 5px;
+    }
+  </style>
 </head>
 <body>
-  <h1>Маркет</h1>
+  <h1>🎁 NFT Marketplace</h1>
   <div id="store"></div>
 
   <div id="admin-panel" style="display: none;">
-    <h2>Добавить подарок</h2>
-    <form id="addGiftForm">
-      <input name="name" placeholder="Название"><br>
-      <input name="price" type="number" placeholder="Цена"><br>
-      <input name="stock" type="number" placeholder="Остаток"><br>
-      <input name="file" type="file" accept=".tgs"><br>
-      <button type="submit">Добавить</button>
+    <h2>🛠️ Админ-панель</h2>
+    <form id="giftForm">
+      <label>Название</label>
+      <input name="name" required>
+
+      <label>Цена</label>
+      <input name="price" type="number" required>
+
+      <label>Остаток</label>
+      <input name="stock" type="number" required>
+
+      <label>.tgs файл</label>
+      <input name="file" type="file" accept=".tgs" required>
+
+      <button type="submit" class="btn">Добавить подарок</button>
     </form>
   </div>
 
   <script>
     window.Telegram.WebApp.ready();
-    const tgUser = window.Telegram.WebApp.initDataUnsafe?.user;
+    const tgUser = Telegram.WebApp.initDataUnsafe.user;
     const userId = tgUser?.id;
     const ADMIN_ID = 5000936733;
 
     if (!userId) {
-      alert("Ошибка: пользователь Telegram не найден.");
+      alert("Ошибка: Telegram user ID не найден");
     } else {
       fetch(`/init_user?user_id=${userId}`, { method: 'POST' });
 
       if (userId === ADMIN_ID) {
-        document.getElementById("admin-panel").style.display = "block";
+        document.getElementById('admin-panel').style.display = 'block';
       }
 
       fetch('/store')
-        .then(r => r.json())
+        .then(res => res.json())
         .then(data => {
           const container = document.getElementById('store');
-          data.forEach(gift => {
+          data.forEach(g => {
             const div = document.createElement('div');
+            div.className = 'gift';
             div.innerHTML = `
-              <strong>${gift.name}</strong> — ${gift.price}⭐<br>
-              <img src="/${gift.tgs_path}" width="64" height="64"><hr>
+              <h3>${g.name}</h3>
+              <img src="/${g.tgs_path}" alt="gift"><br>
+              <strong>Цена:</strong> ${g.price} ⭐<br>
+              <strong>Остаток:</strong> ${g.stock}
             `;
             container.appendChild(div);
           });
         });
 
-      document.getElementById("addGiftForm").onsubmit = async (e) => {
+      document.getElementById('giftForm').onsubmit = async (e) => {
         e.preventDefault();
         const form = new FormData(e.target);
         form.append('user_id', userId);
-        await fetch('/admin/add_gift', {
+        const res = await fetch('/admin/add_gift', {
           method: 'POST',
           body: form
         });
-        alert("Подарок добавлен");
-        location.reload();
+        const data = await res.json();
+        if (data.status === 'added') {
+          alert('Подарок добавлен');
+          location.reload();
+        } else {
+          alert('Ошибка: ' + JSON.stringify(data));
+        }
       };
     }
   </script>
