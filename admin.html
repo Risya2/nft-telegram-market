@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head><title>Админ-панель</title></head>
+<body>
+  <h1>Добавить Подарок</h1>
+  <form action="/admin/add_gift" method="post" enctype="multipart/form-data">
+    <input name="name" placeholder="Название"><br>
+    <input name="price" placeholder="Цена"><br>
+    <input name="stock" placeholder="Остаток"><br>
+    <input name="file" type="file"><br>
+    <button type="submit">Добавить</button>
+  </form>
+  <h2>Добавить улучшение</h2>
+  <a href="/admin/add_upgrade?user_id={{ user_id }}">Перейти</a>
+</body>
+</html>
