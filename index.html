@@ -10,66 +10,56 @@
       font-family: sans-serif;
       margin: 0;
       padding: 0;
-      background: #121212;
-      color: #ffffff;
+      background: #111;
+      color: #fff;
     }
-
     header, nav, main {
       padding: 1rem;
     }
-
     nav a {
       margin: 0 1rem;
       text-decoration: none;
-      color: #90caf9;
+      color: #00aaff;
     }
-
     section {
       display: none;
       padding: 1rem;
-      background: #1e1e1e;
+      background: #222;
       margin: 1rem;
       border-radius: 12px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
     }
-
     section.active {
       display: block;
     }
-
     .gift-card, .item-card {
-      border: 1px solid #333;
+      border: 1px solid #444;
       padding: 1rem;
       border-radius: 10px;
       margin: 1rem 0;
-      background: #2c2c2c;
+      background: #333;
     }
-
     .gift-card img, .item-card img {
       width: 64px;
       height: 64px;
     }
-
-    .admin-panel input,
-    .admin-panel select,
-    .admin-panel button {
+    .admin-panel input, .admin-panel select, .admin-panel button {
       display: block;
       margin: 0.5rem 0;
       padding: 0.5rem;
       border-radius: 6px;
       border: none;
-      font-size: 1rem;
     }
-
-    .admin-panel button,
     button {
-      background-color: #1e88e5;
-      color: #fff;
+      background-color: #00aaff;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
       cursor: pointer;
     }
-
     button:hover {
-      background-color: #1565c0;
+      background-color: #0088cc;
     }
   </style>
 </head>
@@ -79,7 +69,6 @@
     <nav>
       <a href="#" onclick="showSection('profile')">Профиль</a>
       <a href="#" onclick="showSection('store')">Магазин</a>
-      <a href="#" onclick="showSection('market')">Маркет</a>
       <a href="#" onclick="showSection('admin')">Админ</a>
     </nav>
   </header>
@@ -98,12 +87,6 @@
       <div id="store-items"></div>
     </section>
 
-    <!-- Маркет -->
-    <section id="market">
-      <h2>Маркет</h2>
-      <p>Здесь можно купить и продать подарки другим пользователям (в разработке).</p>
-    </section>
-
     <!-- Админ панель -->
     <section id="admin">
       <h2>Админ-панель</h2>
@@ -117,14 +100,14 @@
           <button type="submit">Добавить</button>
         </form>
 
-        <h3>Прибавить остаток по ID</h3>
+        <h3>Прибавить остаток</h3>
         <form id="add-stock-form">
           <input type="number" name="gift_id" placeholder="ID подарка" required />
           <input type="number" name="amount" placeholder="Сколько добавить" required />
           <button type="submit">Обновить</button>
         </form>
 
-        <h3>Добавить улучшение на подарок</h3>
+        <h3>Добавить улучшение</h3>
         <form id="add-upgrade-form">
           <input type="number" name="gift_id" placeholder="ID подарка" required />
           <input type="file" name="file" accept=".tgs" required />
@@ -135,7 +118,7 @@
   </main>
 
   <script>
-    const API = 'http://localhost:8000'; // Заменить на прод-URL при деплое
+    const API = 'http://localhost:8000';
     let USER_ID = null;
     const ADMIN_ID = 5000936733;
 
@@ -185,21 +168,21 @@
       loadProfile();
     }
 
-    function showSection(id) {
+    async function showSection(id) {
       document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
-      const el = document.getElementById(id);
-      if (el) el.classList.add('active');
+      document.getElementById(id).classList.add('active');
       if (id === 'profile') loadProfile();
       if (id === 'store') loadStore();
     }
 
+    // --- ФОРМЫ АДМИНА ---
     document.getElementById('add-gift-form').onsubmit = async (e) => {
       e.preventDefault();
       const form = new FormData(e.target);
       form.append('user_id', ADMIN_ID);
       await fetch(`${API}/admin/add_gift`, { method: 'POST', body: form });
       e.target.reset();
-      alert('Гифт добавлен');
+      alert('Подарок добавлен');
     };
 
     document.getElementById('add-stock-form').onsubmit = async (e) => {
@@ -227,13 +210,11 @@
         return;
       }
       USER_ID = tgUser.id;
+      if (USER_ID !== ADMIN_ID) {
+        document.getElementById('admin').style.display = 'none';
+      }
       await initUser();
       await loadProfile();
-
-      if (USER_ID !== ADMIN_ID) {
-        document.getElementById('admin').remove();
-        document.querySelector('nav a[href="#"][onclick*="admin"]').remove();
-      }
     };
   </script>
 </body>
