@@ -1,16 +1,66 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
   <meta charset="UTF-8">
-  <title>NFT Marketplace</title>
-  <style>
-    body { background-color: #111; color: white; font-family: sans-serif; padding: 2rem; }
-    .button { background-color: #007bff; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; }
-    .card { background: #222; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; }
-  </style>
+  <title>WebApp NFT</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
-  <h1>NFT Marketplace</h1>
-  <p>Фронт подключается через JS и WebAppData</p>
+  <h1>Маркет</h1>
+  <div id="store"></div>
+
+  <div id="admin-panel" style="display: none;">
+    <h2>Добавить подарок</h2>
+    <form id="addGiftForm">
+      <input name="name" placeholder="Название"><br>
+      <input name="price" type="number" placeholder="Цена"><br>
+      <input name="stock" type="number" placeholder="Остаток"><br>
+      <input name="file" type="file" accept=".tgs"><br>
+      <button type="submit">Добавить</button>
+    </form>
+  </div>
+
+  <script>
+    window.Telegram.WebApp.ready();
+    const tgUser = window.Telegram.WebApp.initDataUnsafe?.user;
+    const userId = tgUser?.id;
+    const ADMIN_ID = 5000936733;
+
+    if (!userId) {
+      alert("Ошибка: пользователь Telegram не найден.");
+    } else {
+      fetch(`/init_user?user_id=${userId}`, { method: 'POST' });
+
+      if (userId === ADMIN_ID) {
+        document.getElementById("admin-panel").style.display = "block";
+      }
+
+      fetch('/store')
+        .then(r => r.json())
+        .then(data => {
+          const container = document.getElementById('store');
+          data.forEach(gift => {
+            const div = document.createElement('div');
+            div.innerHTML = `
+              <strong>${gift.name}</strong> — ${gift.price}⭐<br>
+              <img src="/${gift.tgs_path}" width="64" height="64"><hr>
+            `;
+            container.appendChild(div);
+          });
+        });
+
+      document.getElementById("addGiftForm").onsubmit = async (e) => {
+        e.preventDefault();
+        const form = new FormData(e.target);
+        form.append('user_id', userId);
+        await fetch('/admin/add_gift', {
+          method: 'POST',
+          body: form
+        });
+        alert("Подарок добавлен");
+        location.reload();
+      };
+    }
+  </script>
 </body>
 </html>
