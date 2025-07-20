@@ -6,14 +6,77 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    body { font-family: sans-serif; margin: 0; padding: 0; background: #f9f9f9; }
-    header, nav, main { padding: 1rem; }
-    nav a { margin: 0 1rem; text-decoration: none; color: #007bff; }
-    section { display: none; padding: 1rem; background: #fff; margin: 1rem; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-    section.active { display: block; }
-    .gift-card, .item-card { border: 1px solid #ddd; padding: 1rem; border-radius: 10px; margin: 1rem 0; background: #fafafa; }
-    .gift-card img, .item-card img { width: 64px; height: 64px; }
-    .admin-panel input, .admin-panel select, .admin-panel button { display: block; margin: 0.5rem 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to bottom right, #f0f4ff, #ffffff);
+      color: #333;
+    }
+    header {
+      background: #4a90e2;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    nav {
+      display: flex;
+      justify-content: center;
+      background: #ffffff;
+      border-bottom: 1px solid #ccc;
+    }
+    nav a {
+      margin: 0.5rem 1rem;
+      text-decoration: none;
+      color: #4a90e2;
+      font-weight: 500;
+    }
+    section {
+      display: none;
+      padding: 1rem;
+      margin: 1rem auto;
+      max-width: 600px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    section.active {
+      display: block;
+    }
+    .gift-card, .item-card {
+      border: 1px solid #ddd;
+      padding: 1rem;
+      border-radius: 12px;
+      margin: 1rem 0;
+      background: #fdfdfd;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .gift-card img, .item-card img {
+      width: 64px;
+      height: 64px;
+    }
+    .admin-panel input, .admin-panel select, .admin-panel button {
+      display: block;
+      width: 100%;
+      margin: 0.5rem 0;
+      padding: 0.5rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background: #4a90e2;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #3b7dd8;
+    }
   </style>
 </head>
 <body>
@@ -23,7 +86,7 @@
       <a href="#" onclick="showSection('profile')">Профиль</a>
       <a href="#" onclick="showSection('store')">Магазин</a>
       <a href="#" onclick="showSection('market')">Маркет</a>
-      <a href="#" onclick="showSection('admin')">Админ</a>
+      <a id="admin-nav" href="#" style="display:none" onclick="showSection('admin')">Админ</a>
     </nav>
   </header>
 
@@ -110,8 +173,10 @@
         div.className = 'item-card';
         div.innerHTML = `
           <img src="${API}/${item.tgs_path}" alt="${item.name}" />
-          <p><strong>${item.name}</strong><br>Цена: ${item.price} ⭐<br>Остаток: ${item.stock}</p>
-          <button onclick="buyGift(${item.id})">Купить</button>
+          <div>
+            <p><strong>${item.name}</strong><br>Цена: ${item.price} ⭐<br>Остаток: ${item.stock}</p>
+            <button onclick="buyGift(${item.id})">Купить</button>
+          </div>
         `;
         container.appendChild(div);
       });
@@ -169,6 +234,11 @@
         return;
       }
       USER_ID = tgUser.id;
+      if (USER_ID === ADMIN_ID) {
+        document.getElementById('admin-nav').style.display = 'inline';
+      } else {
+        document.getElementById('admin').remove();
+      }
       await initUser();
       await loadProfile();
     };
