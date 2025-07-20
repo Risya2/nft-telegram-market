@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, render_template
 from flask_sqlalchemy import SQLAlchemy
 import os
 
@@ -18,12 +18,16 @@ class User(db.Model):
 
 class Gift(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50))
+    name = db.Column(db.String(100))
     price = db.Column(db.Integer)
     stock = db.Column(db.Integer)
     tgs_path = db.Column(db.String(200))
 
 db.create_all()
+
+@app.route('/')
+def index():
+    return send_from_directory('static', 'index.html')
 
 @app.route('/init_user', methods=['POST'])
 def init_user():
@@ -52,7 +56,7 @@ def store():
 def add_gift():
     user_id = int(request.form.get('user_id'))
     if user_id != ADMIN_ID:
-        return jsonify({'error': 'Not allowed'}), 403
+        return jsonify({'error': 'Forbidden'}), 403
 
     name = request.form['name']
     price = int(request.form['price'])
@@ -60,8 +64,8 @@ def add_gift():
     file = request.files['file']
 
     filename = file.filename
-    path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    file.save(path)
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    file.save(file_path)
 
     gift = Gift(name=name, price=price, stock=stock, tgs_path=f'uploads/{filename}')
     db.session.add(gift)
@@ -70,7 +74,7 @@ def add_gift():
     return jsonify({'status': 'added'})
 
 @app.route('/uploads/<path:filename>')
-def uploads(filename):
+def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 if __name__ == '__main__':
