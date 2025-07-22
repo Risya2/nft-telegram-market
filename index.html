@@ -1,0 +1,20 @@
+<!-- В разделе магазина замените тестовые данные на динамическую загрузку -->
+<div id="shop" class="section">
+    <h2>Магазин подарков</h2>
+    <div id="available-gifts">
+        {% if gifts %}
+            {% for gift in gifts %}
+            <div class="gift-item">
+                <div class="gift-name">{{ gift.name }}</div>
+                <div class="gift-details">
+                    <span>Цена: {{ gift.price }} звёзд</span>
+                    <span>Осталось: {{ gift.stock }}</span>
+                </div>
+                <button class="buy-button" data-id="{{ gift.name }}">Купить</button>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p>В магазине пока нет подарков</p>
+        {% endif %}
+    </div>
+</div>
