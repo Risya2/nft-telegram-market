@@ -5,103 +5,143 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gift Market</title>
     <style>
+        :root {
+            --primary: #1E90FF;
+            --dark: #121212;
+            --darker: #0a0a0a;
+            --light: #f8f9fa;
+            --gray: #2a2a2a;
+        }
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         body {
-            background-color: #000;
-            color: #fff;
-            padding: 20px;
+            background: var(--dark);
+            color: var(--light);
+            line-height: 1.6;
         }
         .container {
             max-width: 600px;
             margin: 0 auto;
+            padding: 20px;
         }
         .balance {
-            background-color: #111;
+            background: var(--darker);
             padding: 15px;
             border-radius: 10px;
             text-align: center;
             margin-bottom: 20px;
-            font-size: 18px;
+            font-size: 1.2rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .balance span {
+            color: var(--primary);
+            font-weight: bold;
         }
         .nav {
             display: flex;
-            justify-content: space-between;
+            gap: 10px;
             margin-bottom: 20px;
         }
         .nav-btn {
-            background-color: #1E90FF;
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-size: 16px;
-            cursor: pointer;
             flex: 1;
-            margin: 0 5px;
-            text-align: center;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: var(--gray);
+            color: var(--light);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
-        .nav-btn.active {
-            background-color: #0066CC;
-            font-weight: bold;
+        .nav-btn:hover, .nav-btn.active {
+            background: var(--primary);
         }
         .section {
             display: none;
-            background-color: #111;
-            padding: 15px;
+            background: var(--darker);
             border-radius: 10px;
+            padding: 20px;
             margin-top: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         .section.active {
             display: block;
         }
-        .gift-item {
-            background-color: #222;
-            padding: 15px;
-            border-radius: 8px;
+        .section h2 {
             margin-bottom: 15px;
+            color: var(--primary);
+        }
+        .gift-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .gift-item {
+            background: var(--gray);
+            border-radius: 8px;
+            padding: 15px;
+            transition: transform 0.2s;
+        }
+        .gift-item:hover {
+            transform: translateY(-2px);
         }
         .gift-name {
-            font-size: 18px;
-            font-weight: bold;
+            font-size: 1.1rem;
+            font-weight: 600;
             margin-bottom: 5px;
-            color: #1E90FF;
+            color: var(--primary);
         }
         .gift-details {
             display: flex;
             justify-content: space-between;
             margin-bottom: 10px;
+            font-size: 0.9rem;
+            color: #aaa;
         }
         .buy-btn {
-            background-color: #1E90FF;
-            color: white;
-            border: none;
-            padding: 10px;
-            border-radius: 5px;
             width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background: var(--primary);
+            color: white;
+            font-weight: 600;
             cursor: pointer;
-            font-size: 16px;
+            transition: background 0.3s;
+        }
+        .buy-btn:hover {
+            background: #187bcd;
         }
         .buy-btn:disabled {
-            background-color: #555;
+            background: #555;
             cursor: not-allowed;
+        }
+        .user-gifts {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
         .user-gift {
             display: flex;
             justify-content: space-between;
-            padding: 10px 0;
+            padding: 10px;
             border-bottom: 1px solid #333;
+        }
+        .empty {
+            text-align: center;
+            color: #777;
+            padding: 20px;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="balance">
-            Баланс: {{ user.balance }} ⭐
+            Баланс: <span>{{ user.balance }} ⭐</span>
         </div>
         
         <div class="nav">
@@ -114,60 +154,64 @@
         
         <!-- Профиль -->
         <div id="profile" class="section active">
-            <h2>Ваши подарки</h2>
-            {% if user.gifts %}
-                {% for gift in user.gifts %}
-                <div class="user-gift">
-                    <span>{{ gift.name }}</span>
-                    <span>x{{ gift.quantity }}</span>
-                </div>
-                {% endfor %}
-            {% else %}
-                <p>У вас пока нет подарков</p>
-            {% endif %}
+            <h2>Мои подарки</h2>
+            <div class="user-gifts">
+                {% if user.gifts %}
+                    {% for gift in user.gifts %}
+                    <div class="user-gift">
+                        <span>{{ gift.name }}</span>
+                        <span>x{{ gift.quantity }}</span>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty">У вас пока нет подарков</div>
+                {% endif %}
+            </div>
         </div>
         
         <!-- Магазин -->
         <div id="shop" class="section">
             <h2>Доступные подарки</h2>
-            {% for gift in gifts %}
-            <div class="gift-item">
-                <div class="gift-name">{{ gift[1] }}</div>
-                <div class="gift-details">
-                    <span>Цена: {{ gift[2] }} ⭐</span>
-                    <span>Осталось: {{ gift[3] }}</span>
+            <div class="gift-list">
+                {% for gift in gifts %}
+                <div class="gift-item">
+                    <div class="gift-name">{{ gift[1] }}</div>
+                    <div class="gift-details">
+                        <span>Цена: {{ gift[2] }} ⭐</span>
+                        <span>Осталось: {{ gift[3] }}</span>
+                    </div>
+                    <button class="buy-btn" data-id="{{ gift[0] }}" {% if gift[3] <= 0 %}disabled{% endif %}>
+                        {% if gift[3] <= 0 %}Нет в наличии{% else %}Купить{% endif %}
+                    </button>
                 </div>
-                <button class="buy-btn" data-id="{{ gift[0] }}" {% if gift[3] <= 0 %}disabled{% endif %}>
-                    {% if gift[3] <= 0 %}Распродано{% else %}Купить{% endif %}
-                </button>
+                {% else %}
+                <div class="empty">В магазине пока нет подарков</div>
+                {% endfor %}
             </div>
-            {% else %}
-            <p>В магазине пока нет подарков</p>
-            {% endfor %}
         </div>
         
-        <!-- Админ-панель (только для админа) -->
+        <!-- Админ-панель -->
         {% if is_admin %}
         <div id="admin" class="section">
             <h2>Добавить подарок</h2>
-            <form action="/admin" method="post" enctype="multipart/form-data">
+            <form action="/admin" method="post" enctype="multipart/form-data" class="gift-form">
                 <div style="margin-bottom: 15px;">
                     <label style="display: block; margin-bottom: 5px;">Название:</label>
-                    <input type="text" name="name" required style="width: 100%; padding: 8px; background: #222; border: 1px solid #333; color: white; border-radius: 5px;">
+                    <input type="text" name="name" required style="width: 100%; padding: 10px; background: #222; border: 1px solid #333; color: white; border-radius: 5px;">
                 </div>
                 <div style="margin-bottom: 15px;">
                     <label style="display: block; margin-bottom: 5px;">Цена:</label>
-                    <input type="number" name="price" required style="width: 100%; padding: 8px; background: #222; border: 1px solid #333; color: white; border-radius: 5px;">
+                    <input type="number" name="price" required style="width: 100%; padding: 10px; background: #222; border: 1px solid #333; color: white; border-radius: 5px;">
                 </div>
                 <div style="margin-bottom: 15px;">
                     <label style="display: block; margin-bottom: 5px;">Количество:</label>
-                    <input type="number" name="stock" required style="width: 100%; padding: 8px; background: #222; border: 1px solid #333; color: white; border-radius: 5px;">
+                    <input type="number" name="stock" required style="width: 100%; padding: 10px; background: #222; border: 1px solid #333; color: white; border-radius: 5px;">
                 </div>
                 <div style="margin-bottom: 15px;">
                     <label style="display: block; margin-bottom: 5px;">Файл .tgs:</label>
-                    <input type="file" name="file" accept=".tgs" required style="width: 100%; padding: 8px; background: #222; border: 1px solid #333; color: white; border-radius: 5px;">
+                    <input type="file" name="file" accept=".tgs" required style="width: 100%; padding: 10px; background: #222; border: 1px solid #333; color: white; border-radius: 5px;">
                 </div>
-                <button type="submit" style="background: #1E90FF; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; width: 100%;">Добавить</button>
+                <button type="submit" style="background: #1E90FF; color: white; border: none; padding: 12px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: 600;">Добавить подарок</button>
             </form>
         </div>
         {% endif %}
@@ -189,12 +233,23 @@
         document.querySelectorAll('.buy-btn').forEach(btn => {
             btn.addEventListener('click', async function() {
                 const giftId = this.dataset.id;
-                const response = await fetch(`/buy/${giftId}`);
-                const result = await response.json();
+                const btnText = this.textContent;
+                this.disabled = true;
+                this.textContent = 'Обработка...';
                 
-                alert(result.message);
-                if (result.success) {
-                    location.reload();
+                try {
+                    const response = await fetch(`/buy/${giftId}`);
+                    const result = await response.json();
+                    
+                    alert(result.message);
+                    if (result.success) {
+                        location.reload();
+                    }
+                } catch (error) {
+                    alert('Ошибка при покупке');
+                } finally {
+                    this.textContent = btnText;
+                    this.disabled = false;
                 }
             });
         });
