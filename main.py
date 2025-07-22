@@ -6,131 +6,127 @@ from werkzeug.utils import secure_filename
 from contextlib import closing
 
 app = Flask(__name__)
-
-# Генерация секретного ключа
 app.secret_key = secrets.token_hex(32)
 
 # Конфигурация
-app.config['UPLOAD_FOLDER'] = 'static/gifts'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
-app.config['DATABASE'] = 'gift_market.db'
-app.config['INITIAL_BALANCE'] = 2000000
-app.config['ADMIN_ID'] = 5000936733  # Ваш Telegram ID для админ-панели
+app.config.update({
+    'UPLOAD_FOLDER': 'static/gifts',
+    'DATABASE': 'gifts.db',
+    'INITIAL_BALANCE': 2000000,
+    'ADMIN_ID': 5000936733,
+    'MAX_CONTENT_LENGTH': 16 * 1024 * 1024
+})
 
 # Инициализация БД
 def init_db():
     with closing(connect_db()) as db:
-        with app.open_resource('schema.sql', mode='r') as f:
-            db.cursor().executescript(f.read())
+        db.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY,
+            balance INTEGER NOT NULL DEFAULT 2000000
+        )""")
+        
+        db.execute("""
+        CREATE TABLE IF NOT EXISTS gifts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            price INTEGER NOT NULL,
+            stock INTEGER NOT NULL,
+            filename TEXT NOT NULL
+        )""")
+        
+        db.execute("""
+        CREATE TABLE IF NOT EXISTS user_gifts (
+            user_id INTEGER,
+            gift_id INTEGER,
+            quantity INTEGER DEFAULT 1,
+            PRIMARY KEY (user_id, gift_id),
+            FOREIGN KEY (user_id) REFERENCES users(id),
+            FOREIGN KEY (gift_id) REFERENCES gifts(id)
+        )""")
+        
         db.commit()
 
 def connect_db():
     return sqlite3.connect(app.config['DATABASE'])
 
-# Создаем файл схемы
-with open('schema.sql', 'w') as f:
-    f.write("""
-    CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY,
-        balance INTEGER NOT NULL DEFAULT 2000000
-    );
-    
-    CREATE TABLE IF NOT EXISTS gifts (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        price INTEGER NOT NULL,
-        stock INTEGER NOT NULL,
-        file_path TEXT NOT NULL
-    );
-    
-    CREATE TABLE IF NOT EXISTS user_gifts (
-        user_id INTEGER,
-        gift_id INTEGER,
-        quantity INTEGER DEFAULT 1,
-        PRIMARY KEY (user_id, gift_id),
-        FOREIGN KEY (user_id) REFERENCES users(id),
-        FOREIGN KEY (gift_id) REFERENCES gifts(id)
-    );
-    """)
-
 if not os.path.exists(app.config['DATABASE']):
     init_db()
 
-# Функции БД
-def get_user_data(user_id):
+# Функции для работы с БД
+def get_user(user_id):
     with closing(connect_db()) as db:
-        # Создаем пользователя если не существует
-        db.execute("INSERT OR IGNORE INTO users (id, balance) VALUES (?, ?)", 
+        db.execute("INSERT OR IGNORE INTO users (id, balance) VALUES (?, ?)",
                   (user_id, app.config['INITIAL_BALANCE']))
         db.commit()
         
-        balance = db.execute("SELECT balance FROM users WHERE id = ?", (user_id,)).fetchone()[0]
+        user = db.execute("SELECT balance FROM users WHERE id = ?", (user_id,)).fetchone()
         gifts = db.execute("""
-            SELECT g.name, g.file_path, ug.quantity 
+            SELECT g.name, g.filename, ug.quantity 
             FROM user_gifts ug
             JOIN gifts g ON ug.gift_id = g.id
             WHERE ug.user_id = ?
         """, (user_id,)).fetchall()
         
         return {
-            "balance": balance,
-            "gifts": [{"name": name, "file": file, "quantity": qty} for name, file, qty in gifts]
+            'balance': user[0],
+            'gifts': [{'name': g[0], 'file': g[1], 'quantity': g[2]} for g in gifts]
         }
 
-def get_gifts():
+def get_all_gifts():
     with closing(connect_db()) as db:
-        return db.execute("SELECT id, name, price, stock, file_path FROM gifts").fetchall()
+        return db.execute("SELECT id, name, price, stock, filename FROM gifts").fetchall()
 
 def buy_gift(user_id, gift_id):
     with closing(connect_db()) as db:
         try:
-            # Проверяем подарок
             gift = db.execute("SELECT price, stock FROM gifts WHERE id = ?", (gift_id,)).fetchone()
             if not gift or gift[1] <= 0:
                 return False, "Подарок недоступен"
             
-            # Проверяем баланс
             balance = db.execute("SELECT balance FROM users WHERE id = ?", (user_id,)).fetchone()[0]
             if balance < gift[0]:
                 return False, "Недостаточно звёзд"
             
-            # Совершаем покупку
             db.execute("UPDATE users SET balance = balance - ? WHERE id = ?", (gift[0], user_id))
             db.execute("UPDATE gifts SET stock = stock - 1 WHERE id = ?", (gift_id,))
+            
+            # Добавляем или обновляем подарок у пользователя
             db.execute("""
                 INSERT INTO user_gifts (user_id, gift_id, quantity) 
                 VALUES (?, ?, 1)
                 ON CONFLICT(user_id, gift_id) DO UPDATE SET quantity = quantity + 1
             """, (user_id, gift_id))
+            
             db.commit()
             return True, "Подарок куплен!"
         except Exception as e:
             db.rollback()
-            return False, str(e)
+            return False, f"Ошибка: {str(e)}"
 
 def add_gift(name, price, stock, filename):
     with closing(connect_db()) as db:
         try:
             db.execute("""
-                INSERT INTO gifts (name, price, stock, file_path)
+                INSERT INTO gifts (name, price, stock, filename)
                 VALUES (?, ?, ?, ?)
             """, (name, price, stock, filename))
             db.commit()
             return True, "Подарок добавлен"
         except Exception as e:
             db.rollback()
-            return False, str(e)
+            return False, f"Ошибка: {str(e)}"
 
 # Маршруты
 @app.route('/')
-def index():
-    user_id = request.args.get('user_id', default=1, type=int)
+def home():
+    user_id = request.args.get('user_id', type=int) or 1
     session['user_id'] = user_id
     is_admin = user_id == app.config['ADMIN_ID']
     
-    return render_template('index.html', 
-                         user=get_user_data(user_id),
-                         gifts=get_gifts(),
+    return render_template('index.html',
+                         user=get_user(user_id),
+                         gifts=get_all_gifts(),
                          is_admin=is_admin)
 
 @app.route('/buy/<int:gift_id>')
@@ -156,10 +152,11 @@ def admin():
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             add_gift(name, price, stock, filename)
     
-    return render_template('admin.html', gifts=get_gifts())
+    return render_template('admin.html', gifts=get_all_gifts())
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() == 'tgs'
 
 if __name__ == '__main__':
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     app.run(debug=True)
