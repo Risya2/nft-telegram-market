@@ -1,20 +1,203 @@
-<!-- В разделе магазина замените тестовые данные на динамическую загрузку -->
-<div id="shop" class="section">
-    <h2>Магазин подарков</h2>
-    <div id="available-gifts">
-        {% if gifts %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gift Market</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            background-color: #000;
+            color: #fff;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .balance {
+            background-color: #111;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .nav-btn {
+            background-color: #1E90FF;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            flex: 1;
+            margin: 0 5px;
+            text-align: center;
+        }
+        .nav-btn.active {
+            background-color: #0066CC;
+            font-weight: bold;
+        }
+        .section {
+            display: none;
+            background-color: #111;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        .section.active {
+            display: block;
+        }
+        .gift-item {
+            background-color: #222;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .gift-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #1E90FF;
+        }
+        .gift-details {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .buy-btn {
+            background-color: #1E90FF;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            width: 100%;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .buy-btn:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+        }
+        .user-gift {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="balance">
+            Баланс: {{ user.balance }} ⭐
+        </div>
+        
+        <div class="nav">
+            <button class="nav-btn active" data-section="profile">Профиль</button>
+            <button class="nav-btn" data-section="shop">Магазин</button>
+            {% if is_admin %}
+            <button class="nav-btn" data-section="admin">Админ</button>
+            {% endif %}
+        </div>
+        
+        <!-- Профиль -->
+        <div id="profile" class="section active">
+            <h2>Ваши подарки</h2>
+            {% if user.gifts %}
+                {% for gift in user.gifts %}
+                <div class="user-gift">
+                    <span>{{ gift.name }}</span>
+                    <span>x{{ gift.quantity }}</span>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p>У вас пока нет подарков</p>
+            {% endif %}
+        </div>
+        
+        <!-- Магазин -->
+        <div id="shop" class="section">
+            <h2>Доступные подарки</h2>
             {% for gift in gifts %}
             <div class="gift-item">
-                <div class="gift-name">{{ gift.name }}</div>
+                <div class="gift-name">{{ gift[1] }}</div>
                 <div class="gift-details">
-                    <span>Цена: {{ gift.price }} звёзд</span>
-                    <span>Осталось: {{ gift.stock }}</span>
+                    <span>Цена: {{ gift[2] }} ⭐</span>
+                    <span>Осталось: {{ gift[3] }}</span>
                 </div>
-                <button class="buy-button" data-id="{{ gift.name }}">Купить</button>
+                <button class="buy-btn" data-id="{{ gift[0] }}" {% if gift[3] <= 0 %}disabled{% endif %}>
+                    {% if gift[3] <= 0 %}Распродано{% else %}Купить{% endif %}
+                </button>
             </div>
-            {% endfor %}
-        {% else %}
+            {% else %}
             <p>В магазине пока нет подарков</p>
+            {% endfor %}
+        </div>
+        
+        <!-- Админ-панель (только для админа) -->
+        {% if is_admin %}
+        <div id="admin" class="section">
+            <h2>Добавить подарок</h2>
+            <form action="/admin" method="post" enctype="multipart/form-data">
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px;">Название:</label>
+                    <input type="text" name="name" required style="width: 100%; padding: 8px; background: #222; border: 1px solid #333; color: white; border-radius: 5px;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px;">Цена:</label>
+                    <input type="number" name="price" required style="width: 100%; padding: 8px; background: #222; border: 1px solid #333; color: white; border-radius: 5px;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px;">Количество:</label>
+                    <input type="number" name="stock" required style="width: 100%; padding: 8px; background: #222; border: 1px solid #333; color: white; border-radius: 5px;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px;">Файл .tgs:</label>
+                    <input type="file" name="file" accept=".tgs" required style="width: 100%; padding: 8px; background: #222; border: 1px solid #333; color: white; border-radius: 5px;">
+                </div>
+                <button type="submit" style="background: #1E90FF; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; width: 100%;">Добавить</button>
+            </form>
+        </div>
         {% endif %}
     </div>
-</div>
+
+    <script>
+        // Навигация
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                
+                btn.classList.add('active');
+                document.getElementById(btn.dataset.section).classList.add('active');
+            });
+        });
+        
+        // Покупка подарков
+        document.querySelectorAll('.buy-btn').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const giftId = this.dataset.id;
+                const response = await fetch(`/buy/${giftId}`);
+                const result = await response.json();
+                
+                alert(result.message);
+                if (result.success) {
+                    location.reload();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
